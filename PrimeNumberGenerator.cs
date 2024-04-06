@@ -1,12 +1,52 @@
+using System;
+using System.Threading;
+using System.Windows.Forms;
+
 namespace PrimeNumberGenerator
 {
     public partial class Form1 : Form
     {
+        private Thread primeThread;
         private Thread fiboThread;
+        private int lowerBound;
+        private int upperBound;
 
         public Form1()
         {
             InitializeComponent();
+        }
+
+        private void GeneratePrimes()
+        {
+            int currentNumber = lowerBound <= 2 ? 2 : lowerBound;
+
+            while (true)
+            {
+                bool isPrime = true;
+
+                // Check if the number is prime
+                for (int i = 2; i <= Math.Sqrt(currentNumber); i++)
+                {
+                    if (currentNumber % i == 0)
+                    {
+                        isPrime = false;
+                        break;
+                    }
+                }
+
+                if (isPrime)
+                {
+                    // Update the display in the main thread
+                    Invoke(new MethodInvoker(() => listBox1.Items.Add(currentNumber)));
+                }
+
+                if (upperBound != 0 && currentNumber >= upperBound)
+                {
+                    break;
+                }
+
+                currentNumber++;
+            }
         }
 
         private void GenerateFibonacci()
@@ -16,11 +56,8 @@ namespace PrimeNumberGenerator
 
             while (true)
             {
-                // Оновлення відображення в головному потоці
-                Invoke(new MethodInvoker(() =>
-                {
-                    return listBox2.Items.Add(a);
-                }));
+                // Update the display in the main thread
+                Invoke(new MethodInvoker(() => listBox2.Items.Add(a)));
 
                 int temp = a;
                 a = b;
@@ -28,7 +65,7 @@ namespace PrimeNumberGenerator
 
                 if (b <= upperBound || upperBound == 0)
                 {
-                    Thread.Sleep(100); // Затримка для візуального ефекту
+                    Thread.Sleep(100); // Delay for visual effect
                 }
                 else
                 {
@@ -51,20 +88,37 @@ namespace PrimeNumberGenerator
             }
             else
             {
-                MessageBox.Show("Введіть правильні значення для нижньої та верхньої межі діапазону.");
+                MessageBox.Show("Enter valid values for lower and upper bound.");
             }
         }
 
-        public override bool Equals(object? obj)
+        private void buttonStopPrimes_Click(object sender, EventArgs e)
         {
-            return obj is Form1 form &&
-                   EqualityComparer<Thread>.Default.Equals(this.primeThread, form.primeThread);
+            if (primeThread != null && primeThread.IsAlive)
+            {
+                primeThread.Abort();
+            }
         }
 
-        public override int GetHashCode()
+        private void buttonStopFibo_Click(object sender, EventArgs e)
         {
-            return HashCode.Combine(this.upperBound);
+            if (fiboThread != null && fiboThread.IsAlive)
+            {
+                fiboThread.Abort();
+            }
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (primeThread != null && primeThread.IsAlive)
+            {
+                primeThread.Abort();
+            }
+
+            if (fiboThread != null && fiboThread.IsAlive)
+            {
+                fiboThread.Abort();
+            }
         }
     }
 }
-
